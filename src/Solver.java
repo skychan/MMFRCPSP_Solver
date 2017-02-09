@@ -10,6 +10,10 @@ public class Solver {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+		
+		Enterprise e = new Enterprise(500,600);
+		e.addResource(5, 8);
+		e.getResource(5);
 
 	}
 
