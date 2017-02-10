@@ -48,11 +48,9 @@ public class Enterprise {
 		System.out.println(amount);
 	}
 	
-	public void getInit() {
-		System.out.println(this.width);
-		System.out.println(this.height);
-		System.out.println(this.x);
-		System.out.println(this.y);
+	public void getLocation(){
+		System.out.format("x = %f, y = %f\n", this.x, this.y);
 	}
+
 
 }

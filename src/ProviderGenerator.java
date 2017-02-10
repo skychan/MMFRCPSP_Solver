@@ -1,7 +1,11 @@
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 public class ProviderGenerator {
-	public static void main(String[] args) {
+	public static void main(String[] args) throws IOException {
+		
+		generate("data/test");
 		
 	}
 	
@@ -14,6 +18,7 @@ public class ProviderGenerator {
 		    nbRenewable = data.next();
 		    nbNonRenewable = data.next();
 		    
+		    generateEnterprise(500, 600, 20);
 		    
 		    
 		} catch (IOException e) {
@@ -24,8 +29,13 @@ public class ProviderGenerator {
 		 
 	}
 	
-	public static void generatemap() {
-		System.out.println("1");
-//		return ;
+	public static void generateEnterprise(int width, int height, int amount) {
+		List<Enterprise> eList = new ArrayList<Enterprise>();
+		for (int i = 0; i < amount; i++) {
+			Enterprise e = new Enterprise(width, height);
+			eList.add(e);
+			System.out.print(i + " : ");
+			e.getLocation();
+		}
 	}
 }
