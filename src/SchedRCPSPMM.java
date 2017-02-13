@@ -70,7 +70,7 @@ public class SchedRCPSPMM {
 //        String filename = "data/m12_1.mm";
         int failLimit = 30000;
         int nbTasks, nbRenewable, nbNonRenewable;
-
+        int duedate ;
 //        if (args.length > 0)
 //            filename = args[0];
 //        if (args.length > 1)
@@ -94,7 +94,9 @@ public class SchedRCPSPMM {
                 nonRenewables[j] = cp.intExpr();
                 capNonRenewables[j] = data.next();
             }
-
+            
+            duedate = data.next();
+            
             IloIntervalVar[] tasks = new IloIntervalVar[nbTasks];
             IntervalVarList[] modes = new IntervalVarList[nbTasks];
             for (int i = 0; i < nbTasks; i++) {
@@ -160,6 +162,7 @@ public class SchedRCPSPMM {
             System.out.println("Instance \t: " + filename);
             if (cp.solve()) {
                 System.out.println("Makespan \t: " + cp.getObjValue());
+//                System.out.println(duedate);
             }
             else {
                 System.out.println("No solution found.");
