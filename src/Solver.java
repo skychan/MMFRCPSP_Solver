@@ -12,8 +12,8 @@ public class Solver {
 		}
 		
 		Enterprise e = new Enterprise(500,600);
-		e.addResource(5, 8);
-		e.getResource(5);
+		e.setResourceAmount(5, 8);
+		e.getResourceAmount(5);
 
 	}
 
