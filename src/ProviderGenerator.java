@@ -17,9 +17,9 @@ public class ProviderGenerator {
 		DataReader data = new DataReader(filename);
 		try {
 			
-	    	nbTasks = data.next();
-		    nbRenewable = data.next();
-		    nbNonRenewable = data.next();
+	    	nbTasks = (int) data.next();
+		    nbRenewable = (int) data.next();
+		    nbNonRenewable = (int) data.next();
 		    
 		    int[] amtRenewableRes = new int[nbRenewable];
 		    int amtRenewable = 0;
@@ -28,16 +28,16 @@ public class ProviderGenerator {
 		    
 		    
 		    for (int i = 0; i < nbRenewable; i++) {
-				amtRenewableRes[i] = data.next();
+				amtRenewableRes[i] = (int) data.next();
 				amtRenewable += amtRenewableRes[i];
 			}
 		    
 		    for (int i = 0; i < nbNonRenewable; i++) {
-				amtNonRenewableRes[i] = data.next();
+				amtNonRenewableRes[i] = (int) data.next();
 				amtNonRenewable += amtNonRenewableRes[i];
 			}
 		    
-		    duedate = data.next();
+		    duedate = (int) data.next();
 		    
 		    int amtTotal = amtRenewable + amtNonRenewable;
 		    

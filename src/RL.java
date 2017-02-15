@@ -20,9 +20,9 @@ public class RL {
 		int nbTasks, nbRenewable, nbNonRenewable;
 		DataReader data = new DataReader(filename);
 		
-		 nbTasks = data.next();
-         nbRenewable = data.next();
-         nbNonRenewable = data.next();
+		 nbTasks = (int) data.next();
+         nbRenewable = (int) data.next();
+         nbNonRenewable = (int) data.next();
 		
 	}
 }
