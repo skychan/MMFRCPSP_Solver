@@ -2,7 +2,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.ThreadLocalRandom;
+import java.util.Random;
 
 public class ProviderGenerator {
 	public static void main(String[] args) throws IOException {
@@ -56,23 +56,26 @@ public class ProviderGenerator {
 		    for (int i = 0; i < nbEnt; i++) {
 				idxEnt.add(i);
 			}
-		    
 //		    System.out.println(idxEnt.toString());
+		    /***
+		     * set the random seed
+		     */
+		    Random generator = new Random(8);
 		    
-		    List<Enterprise> enterprise = generateEnterprise(2*duedate, 2*duedate, nbEnt);
+		    List<Enterprise> enterprise = generateEnterprise(2*duedate, 2*duedate, nbEnt, generator);
 		    int[] amtResource = combineArray(amtRenewableRes, amtNonRenewableRes);
  		    for (int type = 0; type < nbRenewable + nbNonRenewable; type++) {
 				double nbSample = amtResource[type] * 2 /( 
 						amtResPerEnt[0] + amtResPerEnt[1]
 						);
 //				System.out.println(nbSample);
-				Collections.shuffle(idxEnt);
+				Collections.shuffle(idxEnt, generator);;
 				
 				for (int i = 0; i < nbSample; i++) {
 					int index = idxEnt.get(i);
 					Enterprise e = enterprise.get(index);
-					int amount = overflow_factor * ThreadLocalRandom.current().nextInt(amtResPerEnt[0],amtResPerEnt[1] +1 );
-					int cost = ThreadLocalRandom.current().nextInt(costRes[0],costRes[1] + 1);
+					int amount = overflow_factor * (generator.nextInt(amtResPerEnt[1] + 1 - amtResPerEnt[0]) + amtResPerEnt[0]);
+					int cost = generator.nextInt(costRes[1] + 1 - costRes[0]) + costRes[0];
 					//					System.out.println(amount);
 					e.setResourceAmount(type, amount);
 					e.setResourceCost(type, cost);
@@ -113,13 +116,15 @@ public class ProviderGenerator {
 	}
 	
 	
-	public static List<Enterprise> generateEnterprise(int width, int height, int amount) {
+	public static List<Enterprise> generateEnterprise(int width, int height, int amount, Random generator) {
 		List<Enterprise> eList = new ArrayList<Enterprise>();
 		double[] quality = {1,10} ; // {min,max}
 		for (int i = 0; i < amount; i++) {
-			Enterprise e = new Enterprise(width, height);
+			double x = generator.nextDouble()*width;
+			double y = generator.nextDouble()*height;
+			Enterprise e = new Enterprise(x, y);
 			e.setIndex(i);
-			e.setQuality(ThreadLocalRandom.current().nextDouble(quality[0],quality[1]));
+			e.setQuality(generator.nextDouble()*(quality[1] - quality[0]) + quality[0]);
 			eList.add(e);
 			
 //			System.out.println(i + " : " + e.getX() + "," + e.getY());

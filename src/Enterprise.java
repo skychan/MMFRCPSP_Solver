@@ -2,12 +2,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 
-public class Enterprise {
-	/**
-	 * Map range 
-	 */
-	private double width, height;
-	
+public class Enterprise {	
 	/**
 	 * Location r_j = ( x , y ) 
 	 */
@@ -28,14 +23,10 @@ public class Enterprise {
 	
 	private double quality = 0;
 	
-	public Enterprise(double width, double height) {
-		// initial the map range
-		this.width = width;
-		this.height = height;
-		
+	public Enterprise(double x, double y) {
 		// generate location
-		this.x = Math.random()*this.width;
-		this.y = Math.random()*this.height;
+		this.x = x;
+		this.y = y;
 		
 		// generate quality globally
 //		this.quality = 10*Math.random() + 10;
