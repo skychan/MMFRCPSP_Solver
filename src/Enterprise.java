@@ -45,17 +45,21 @@ public class Enterprise {
 	
 	public void setResourceAmount(int type, int amount){
 		this.resourceAmount.put(type, amount);
-	}	
-	
-	public int getResourceAmount(int type){
-		int amount;
-		if (this.resourceAmount.containsKey(type)) {
-			amount = (int) this.resourceAmount.get(type);
-		} else {
-			amount = 0;
-		}
-		return amount;
 	}
+	
+	public Map<Integer, Integer> getResourceAmount() {
+		return resourceAmount;
+	}
+	
+//	public int getResourceAmount(int type){
+//		int amount;
+//		if (this.resourceAmount.containsKey(type)) {
+//			amount = (int) this.resourceAmount.get(type);
+//		} else {
+//			amount = 0;
+//		}
+//		return amount;
+//	}
 
 	public Map<Integer, Integer> getResourceCost() {
 		return resourceCost;

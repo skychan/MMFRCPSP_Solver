@@ -35,7 +35,7 @@ public class Benchmark {
 			
 			for (int key : e.getResourceCost().keySet()) {
 				data += Integer.toString(key) + " ";
-				data += Integer.toString(e.getResourceAmount(key)) + " ";
+				data += Integer.toString(e.getResourceAmount().get(key)) + " ";
 				data += Integer.toString(e.getResourceCost().get(key)) + " ";
 			}
 			outputList.add(data);

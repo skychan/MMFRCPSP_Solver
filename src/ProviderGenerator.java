@@ -135,9 +135,11 @@ public class ProviderGenerator {
 	
 	public static double[] checkmount(List<Enterprise> eList, int[] amtResource){
 		int[] amtActual = new int[amtResource.length];
+		double[] actual = new double[amtResource.length];
 		for (Enterprise enterprise : eList) {
 			for (int type = 0; type < amtResource.length; type++) {
-				amtActual[type] += enterprise.getResourceAmount(type);
+				int amount = enterprise.getResourceAmount().containsKey(type)?enterprise.getResourceAmount().get(type):0;
+				amtActual[type] += amount;
 			}
 		}
 		
@@ -148,7 +150,9 @@ public class ProviderGenerator {
 		double[] ratio = new double[amtResource.length];
 		for (int i = 0; i < ratio.length; i++) {
 			ratio[i] =  amtActual[i] / (amtResource[i] * 1.0);
+			actual[i] = (double) amtActual[i];
+			
 		}
-		return ratio;
+		return actual;
 	}
 }
