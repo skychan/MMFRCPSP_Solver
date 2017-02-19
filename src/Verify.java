@@ -70,6 +70,7 @@ public class Verify {
 //        String filename = "data/m12_1.mm";
         int failLimit = 30000;
         int nbTasks, nbRenewable, nbNonRenewable;
+        int duedate = 0;
 
 //        if (args.length > 0)
 //            filename = args[0];
@@ -94,7 +95,9 @@ public class Verify {
                 nonRenewables[j] = cp.intExpr();
                 capNonRenewables[j] = (int) data.next();
             }
-
+            
+            duedate = (int) data.next();
+            
             IloIntervalVar[] tasks = new IloIntervalVar[nbTasks];
             IntervalVarList[] modes = new IntervalVarList[nbTasks];
             for (int i = 0; i < nbTasks; i++) {

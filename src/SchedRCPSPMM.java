@@ -40,23 +40,7 @@ import java.util.*;
 
 public class SchedRCPSPMM {
 
-//    private static class DataReader {
-//
-//        private StreamTokenizer st;
-//
-//        public DataReader(String filename) throws IOException {
-//            FileInputStream fstream = new FileInputStream(filename);
-//            Reader r = new BufferedReader(new InputStreamReader(fstream));
-//            st = new StreamTokenizer(r);
-//        }
-//
-//        public int next() throws IOException {
-//            st.nextToken();
-//            return (int) st.nval;
-//        }
-//    }
-
-    static class IntervalVarList extends ArrayList<IloIntervalVar> {
+    private static class IntervalVarList extends ArrayList<IloIntervalVar> {
         public IloIntervalVar[] toArray() {
             return (IloIntervalVar[]) this.toArray(new IloIntervalVar[this.size()]);
         }
@@ -66,20 +50,24 @@ public class SchedRCPSPMM {
         return (IloIntExpr[]) list.toArray(new IloIntExpr[list.size()]);
     }
 
-//    public static void main(String[] args) throws IOException {
-    public static void solve(String projectFileName, String enterpriseFileName) throws IOException {
-//        String filename = "data/m12_1.mm";
+    public static void solve(String[] args) throws IOException {
         int failLimit = 30000;
         int nbTasks, nbRenewable, nbNonRenewable;
         int duedate;
         
         int nbEnterprise;
         List<Enterprise> enterprises = new ArrayList<Enterprise>();
-//        if (args.length > 0)
-//            filename = args[0];
-//        if (args.length > 1)
-//            failLimit = Integer.parseInt(args[1]);
-
+        String projectFileName = "data/test";
+        String enterpriseFileName = "src/output";
+        
+        if (args.length > 1){
+            projectFileName = args[0];
+        	enterpriseFileName = args[1];
+        }
+        if (args.length > 2)
+            failLimit = Integer.parseInt(args[2]);
+        
+        
         IloCP cp = new IloCP();
         
         DataReader entData = new DataReader(enterpriseFileName);
@@ -162,8 +150,7 @@ public class SchedRCPSPMM {
 						capEntNon[type].put(ent.getIndex(), ent.getResourceAmount().get(tid));
             			entNonRenewables[type].put(ent.getIndex(),cp.intExpr());
 					}
-				}
-				
+				}				
 			}
             
             /*
@@ -175,16 +162,12 @@ public class SchedRCPSPMM {
 
             for (int j = 0; j < nbRenewable; j++) {
                 renewables[j] = cp.cumulFunctionExpr();
-//                capRenewables[j] = (int) data.next();
             	capRenewables[j] = sumValue(capEntRen[j]);
             }
             for (int j = 0; j < nbNonRenewable; j++) {
                 nonRenewables[j] = cp.intExpr();
-//                capNonRenewables[j] = (int) data.next();
             	capNonRenewables[j] = sumValue(capEntNon[j]);
             }
-//            
-//            duedate = (int) data.next();
             
             IloIntervalVar[] tasks = new IloIntervalVar[nbTasks];
             IntervalVarList[] modes = new IntervalVarList[nbTasks];
@@ -200,7 +183,6 @@ public class SchedRCPSPMM {
                 int d = (int) data.next();
                 int nbModes = (int) data.next();
                 int nbSucc = (int) data.next();
-//                amtResource[i] = new HashMap[nbRenewable + nbNonRenewable];
                 for (int k = 0; k < nbModes; k++) {
                     IloIntervalVar alt = cp.intervalVar();
                     alt.setOptional();
@@ -224,12 +206,8 @@ public class SchedRCPSPMM {
                 
                 for (int type = 0; type < nbNonRenewable; type++) {
 					nonrenewableResource[i][type] = new HashMap<Integer, IloIntVar>();
-//					System.out.println(entNonRenewables[type].keySet());
-					for (int eid : entNonRenewables[type].keySet()) {
-						
-//						System.out.println(capEntNon[type]);
+					for (int eid : entNonRenewables[type].keySet()) {						
 						int vmax = capEntNon[type].get(eid);
-//						System.out.println(vmax);
 						IloIntVar amount = cp.intVar(0, vmax);
 						nonrenewableResource[i][type].put(eid, amount);
 					}
@@ -237,11 +215,9 @@ public class SchedRCPSPMM {
                 
             }
             for (int i = 0; i < nbTasks; i++) {
-//                IloIntervalVar task = tasks[i];
                 IntervalVarList imodes = modes[i];
                 int taskId = (int) data.next();
                 for(int k=0; k < imodes.size(); k++) {
-//                    int taskId = data.next();
                     int modeId = (int) data.next();
                     int d = (int) data.next();	// duration
                     imodes.get(k).setSizeMin(d);
@@ -251,24 +227,15 @@ public class SchedRCPSPMM {
                     	
 						q = (int) data.next();
 						if (q > 0) {
-//							renewables[type] = cp.sum(renewables[type], cp.pulse(imodes.get(k), q));
 							IloIntExpr sumRequire = cp.intExpr();
 							for (int eid : entRenewables[type].keySet()) {							
-//								IloIntervalVar amount = renewableResource[i][type].get(eid);
-//								amount.setSizeMax(imodes.get(k).getSizeMax());
-//								amount.setSizeMin(imodes.get(k).getSizeMin());
 								int vmax = enterprises.get(eid).getResourceAmount().get(type);
 								entRenewables[type].put(eid, cp.sum(entRenewables[type].get(eid), cp.pulse(imodes.get(k), 0, vmax)));
 								
 								sumRequire = cp.sum(sumRequire, cp.heightAtStart(imodes.get(k), entRenewables[type].get(eid)) );
 							}
 							cp.add(cp.eq(sumRequire, cp.prod(q, cp.presenceOf(imodes.get(k)))) ) ;
-//							sumRequire.sum(-sumRequire,);
-//							cp.add(cp.eq(sumRequire, q ));
-						}
-						
-						
-						
+						}						
 					}
                     
                     for (int type = 0; type < nbNonRenewable; type++) {
@@ -277,34 +244,15 @@ public class SchedRCPSPMM {
 							IloIntExpr sumRequire = cp.intExpr();
 
 	                    	for (int eid : entNonRenewables[type].keySet()) {
-//								IloIntVar amount = nonrenewableResource[i][type].get(eid);
 	                    		int vmax = capEntNon[type].get(eid);
 	                    		IloIntVar amount = cp.intVar(0, vmax);
-//								amount.setSizeMax(imodes.get(k).getSizeMax());
-//								amount.setSizeMin(imodes.get(k).getSizeMin());
-//								int vmax = enterprises.get(eid).getResourceAmount().get(type);
 								entNonRenewables[type].put(eid, cp.sum(entNonRenewables[type].get(eid),cp.prod(amount,cp.presenceOf(imodes.get(k)) )) );
 								
 								sumRequire = cp.sum(sumRequire, amount);
 	                    	}
 	                    	cp.add(cp.eq(sumRequire, cp.prod(q, cp.presenceOf(imodes.get(k))) ));
-						}
-						
-                    	
+						}                    	
 					}
-                    
-//                    for (int j = 0; j < nbRenewable; j++) {
-//                        q = (int) data.next();
-//                        if (0 < q) {
-//                            renewables[j] = cp.sum(renewables[j], cp.pulse(imodes.get(k), q));
-//                        }
-//                    }
-//                    for (int j = 0; j < nbNonRenewable; j++) {
-//                        q = (int) data.next();
-//                        if (0 < q) {
-//                            nonRenewables[j] = cp.sum(nonRenewables[j], cp.prod(q, cp.presenceOf(imodes.get(k))));
-//                        }
-//                    }
                 }
             }
             
@@ -319,15 +267,6 @@ public class SchedRCPSPMM {
 					cp.add(cp.le(entNonRenewables[type].get(eid),capEntNon[type].get(eid)));
 				}
             }
-//            entRenewables[type].get(eid) <= capEntRen[eid].get(eid)
-
-//            for (int j = 0; j < nbRenewable; j++) {
-//                cp.add(cp.le(renewables[j], capRenewables[j])); // renewable(expr) capRenewables(int[])
-//            }
-//
-//            for (int j = 0; j < nbNonRenewable; j++) {
-//                cp.add(cp.le(nonRenewables[j], capNonRenewables[j]));
-//            }
 
             IloObjective objective = cp.minimize(cp.max(arrayFromList(ends)));
             cp.add(objective);
@@ -336,7 +275,6 @@ public class SchedRCPSPMM {
             System.out.println("Instance \t: " + projectFileName);
             if (cp.solve()) {
                 System.out.println("Makespan \t: " + cp.getObjValue());
-//                System.out.println(duedate);
             }
             else {
                 System.out.println("No solution found.");
