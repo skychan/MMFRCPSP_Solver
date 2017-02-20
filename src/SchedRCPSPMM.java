@@ -118,8 +118,8 @@ public class SchedRCPSPMM {
             /*
              * use old var
              */
-            IloCumulFunctionExpr[] renewables = new IloCumulFunctionExpr[nbRenewable];
-            IloIntExpr[] nonRenewables = new IloIntExpr[nbNonRenewable];
+//            IloCumulFunctionExpr[] renewables = new IloCumulFunctionExpr[nbRenewable];
+//            IloIntExpr[] nonRenewables = new IloIntExpr[nbNonRenewable];
            
             Map<Integer,Integer>[] capEntRen = new HashMap[nbRenewable];
             Map<Integer,Integer>[] capEntNon = new HashMap[nbNonRenewable];
@@ -161,18 +161,16 @@ public class SchedRCPSPMM {
             
 
             for (int j = 0; j < nbRenewable; j++) {
-                renewables[j] = cp.cumulFunctionExpr();
+//                renewables[j] = cp.cumulFunctionExpr();
             	capRenewables[j] = sumValue(capEntRen[j]);
             }
             for (int j = 0; j < nbNonRenewable; j++) {
-                nonRenewables[j] = cp.intExpr();
+//                nonRenewables[j] = cp.intExpr();
             	capNonRenewables[j] = sumValue(capEntNon[j]);
             }
             
             IloIntervalVar[] tasks = new IloIntervalVar[nbTasks];
             IntervalVarList[] modes = new IntervalVarList[nbTasks];
-            Map<Integer, IloIntervalVar>[][] renewableResource = new HashMap[nbTasks][nbRenewable];
-			Map<Integer, IloIntVar>[][] nonrenewableResource = new HashMap[nbTasks][nbNonRenewable];
             for (int i = 0; i < nbTasks; i++) {
                 tasks[i] = cp.intervalVar();
                 modes[i] = new IntervalVarList();
@@ -195,46 +193,45 @@ public class SchedRCPSPMM {
                     int succ = (int) data.next();
                     cp.add(cp.endBeforeStart(task, tasks[succ-1]));
                 }
-                
-                for (int type = 0; type < nbRenewable; type++) {
-                	renewableResource[i][type] = new HashMap<Integer, IloIntervalVar>();
-                	for (int eid : entRenewables[type].keySet()) {
-                		IloIntervalVar amount = cp.intervalVar();
-						renewableResource[i][type].put(eid, amount);
-					}
-				}
-                
-                for (int type = 0; type < nbNonRenewable; type++) {
-					nonrenewableResource[i][type] = new HashMap<Integer, IloIntVar>();
-					for (int eid : entNonRenewables[type].keySet()) {						
-						int vmax = capEntNon[type].get(eid);
-						IloIntVar amount = cp.intVar(0, vmax);
-						nonrenewableResource[i][type].put(eid, amount);
-					}
-				}
-                
             }
+            
+            IloNumExpr[] qualities = new IloNumExpr[nbTasks];	// quality for every service/task
+            for (int i = 0; i < nbTasks; i++) {
+				qualities[i] = cp.numExpr();
+			}
+            IloIntExpr Amount = cp.intExpr();
+            
             for (int i = 0; i < nbTasks; i++) {
                 IntervalVarList imodes = modes[i];
+                IloNumExpr quality = cp.numExpr();
+                IloIntExpr amtTotal = cp.intExpr();
                 int taskId = (int) data.next();
                 for(int k=0; k < imodes.size(); k++) {
                     int modeId = (int) data.next();
                     int d = (int) data.next();	// duration
                     imodes.get(k).setSizeMin(d);
                     imodes.get(k).setSizeMax(d);
+                    IloNumExpr tempQuality = cp.numExpr();
+                    IloIntExpr tempAmtTotal = cp.intExpr();
                     int q;	// resource required amount
                     for (int type = 0; type < nbRenewable; type++) {
                     	
 						q = (int) data.next();
 						if (q > 0) {
 							IloIntExpr sumRequire = cp.intExpr();
+							
 							for (int eid : entRenewables[type].keySet()) {							
 								int vmax = enterprises.get(eid).getResourceAmount().get(type);
 								entRenewables[type].put(eid, cp.sum(entRenewables[type].get(eid), cp.pulse(imodes.get(k), 0, vmax)));
-								
-								sumRequire = cp.sum(sumRequire, cp.heightAtStart(imodes.get(k), entRenewables[type].get(eid)) );
+								IloIntExpr amtChosen = cp.heightAtStart(imodes.get(k), entRenewables[type].get(eid));
+								double entQuality = enterprises.get(eid).getQuality();
+								tempQuality = cp.sum(tempQuality,cp.prod(entQuality, amtChosen));
+								sumRequire = cp.sum(sumRequire, amtChosen);
+								tempAmtTotal = cp.sum(tempAmtTotal,amtChosen);
 							}
 							cp.add(cp.eq(sumRequire, cp.prod(q, cp.presenceOf(imodes.get(k)))) ) ;
+//							tempAmtTotal = cp.sum(tempAmtTotal,q);
+							
 						}						
 					}
                     
@@ -246,15 +243,36 @@ public class SchedRCPSPMM {
 	                    	for (int eid : entNonRenewables[type].keySet()) {
 	                    		int vmax = capEntNon[type].get(eid);
 	                    		IloIntVar amount = cp.intVar(0, vmax);
+//	                    		IloIntVar amount = nonrenewableResource[i][type].get(eid);
+	                    		double entQuality = enterprises.get(eid).getQuality();
 								entNonRenewables[type].put(eid, cp.sum(entNonRenewables[type].get(eid),cp.prod(amount,cp.presenceOf(imodes.get(k)) )) );
-								
+								tempQuality = cp.sum(tempQuality, cp.prod(entQuality, amount));
 								sumRequire = cp.sum(sumRequire, amount);
+//								tempAmtTotal = cp.sum(tempAmtTotal,amount);
 	                    	}
 	                    	cp.add(cp.eq(sumRequire, cp.prod(q, cp.presenceOf(imodes.get(k))) ));
+	                    	tempAmtTotal = cp.sum(tempAmtTotal,q);
 						}                    	
 					}
+                    
+//                    quality = cp.sum(quality, cp.prod(tempQuality, cp.presenceOf(imodes.get(k))));
+                    quality = cp.sum(quality,tempQuality);
+                    amtTotal = cp.sum(amtTotal,cp.prod(tempAmtTotal, cp.presenceOf(imodes.get(k))));
+//                    amtTotal = cp.sum(amtTotal,tempAmtTotal);
                 }
+                if (i > 0 && i < nbTasks-1) {
+                	qualities[i] = cp.quot(quality, amtTotal);
+				}
+                
+                
+//                Amount = cp.sum(Amount,amtTotal);
+                
             }
+            
+            IloIntExpr premode = cp.intExpr();
+            for (IloIntervalVar mode : modes[8]) {
+				premode = cp.sum(premode, cp.presenceOf(mode));
+			}
             
             for(int type = 0; type < nbRenewable; type++){
             	for (int eid : entRenewables[type].keySet()) {
@@ -267,14 +285,24 @@ public class SchedRCPSPMM {
 					cp.add(cp.le(entNonRenewables[type].get(eid),capEntNon[type].get(eid)));
 				}
             }
-
-            IloObjective objective = cp.minimize(cp.max(arrayFromList(ends)));
+            
+            // quality obj
+            IloNumExpr objQuality = cp.sum(qualities);
+            objQuality = cp.prod(-1.0, objQuality);
+            		
+            // makespan obj
+            IloIntExpr objMakespan = cp.max(arrayFromList(ends));
+            
+            IloMultiCriterionExpr objs = cp.staticLex(objMakespan,objQuality);
+            IloObjective objective = cp.minimize(objs);
             cp.add(objective);
 
             cp.setParameter(IloCP.IntParam.FailLimit, failLimit);
+            cp.setParameter(IloCP.DoubleParam.TimeLimit, 200);
             System.out.println("Instance \t: " + projectFileName);
             if (cp.solve()) {
-                System.out.println("Makespan \t: " + cp.getObjValue());
+                System.out.println("Makespan \t: " + cp.getObjValues()[0]);
+                System.out.println("Total Quality \t: " + cp.getObjValues()[1]);
             }
             else {
                 System.out.println("No solution found.");
