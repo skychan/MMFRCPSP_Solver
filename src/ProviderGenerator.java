@@ -118,13 +118,13 @@ public class ProviderGenerator {
 	
 	public static List<Enterprise> generateEnterprise(int width, int height, int amount, Random generator) {
 		List<Enterprise> eList = new ArrayList<Enterprise>();
-		double[] quality = {1,10} ; // {min,max}
+		int[] quality = {1,10} ; // {min,max}
 		for (int i = 0; i < amount; i++) {
-			double x = generator.nextDouble()*width;
-			double y = generator.nextDouble()*height;
+			int x = generator.nextInt(width);
+			int y = generator.nextInt(height);
 			Enterprise e = new Enterprise(x, y);
 			e.setIndex(i);
-			e.setQuality(generator.nextDouble()*(quality[1] - quality[0]) + quality[0]);
+			e.setQuality(generator.nextInt(quality[1] - quality[0]) + quality[0]);
 			eList.add(e);
 			
 //			System.out.println(i + " : " + e.getX() + "," + e.getY());

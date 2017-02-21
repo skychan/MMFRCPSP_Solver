@@ -51,7 +51,7 @@ public class Verify {
 //
 //        public int next() throws IOException {
 //            st.nextToken();
-//            return (int) st.nval;
+//            return  st.nval;
 //        }
 //    }
 
@@ -80,23 +80,23 @@ public class Verify {
         IloCP cp = new IloCP();
         DataReader data = new DataReader(filename);
         try {
-            nbTasks = (int) data.next();
-            nbRenewable = (int) data.next();
-            nbNonRenewable = (int) data.next();
+            nbTasks =  data.next();
+            nbRenewable =  data.next();
+            nbNonRenewable =  data.next();
             IloCumulFunctionExpr[] renewables = new IloCumulFunctionExpr[nbRenewable];
             IloIntExpr[] nonRenewables = new IloIntExpr[nbNonRenewable];
             int[] capRenewables = new int[nbRenewable];
             int[] capNonRenewables = new int[nbNonRenewable];
             for (int j = 0; j < nbRenewable; j++) {
                 renewables[j] = cp.cumulFunctionExpr();
-                capRenewables[j] = (int) data.next();
+                capRenewables[j] =  data.next();
             }
             for (int j = 0; j < nbNonRenewable; j++) {
                 nonRenewables[j] = cp.intExpr();
-                capNonRenewables[j] = (int) data.next();
+                capNonRenewables[j] =  data.next();
             }
             
-            duedate = (int) data.next();
+            duedate =  data.next();
             
             IloIntervalVar[] tasks = new IloIntervalVar[nbTasks];
             IntervalVarList[] modes = new IntervalVarList[nbTasks];
@@ -107,9 +107,9 @@ public class Verify {
             List<IloIntExpr> ends = new ArrayList<IloIntExpr>();
             for (int i = 0; i < nbTasks; i++) {
                 IloIntervalVar task = tasks[i];
-                int d = (int) data.next();
-                int nbModes = (int) data.next();
-                int nbSucc = (int) data.next();
+                int d =  data.next();
+                int nbModes =  data.next();
+                int nbSucc =  data.next();
                 for (int k = 0; k < nbModes; k++) {
                     IloIntervalVar alt = cp.intervalVar();
                     alt.setOptional();
@@ -118,29 +118,29 @@ public class Verify {
                 cp.add(cp.alternative(task, modes[i].toArray()));
                 ends.add(cp.endOf(task));
                 for (int s = 0; s < nbSucc; s++) {
-                    int succ = (int) data.next();
+                    int succ =  data.next();
                     cp.add(cp.endBeforeStart(task, tasks[succ-1]));
                 }
             }
             for (int i = 0; i < nbTasks; i++) {
                 IloIntervalVar task = tasks[i];
                 IntervalVarList imodes = modes[i];
-                int taskId = (int) data.next();
+                int taskId =  data.next();
                 for(int k=0; k < imodes.size(); k++) {
 //                    int taskId = data.next();
-                    int modeId = (int) data.next();
-                    int d = (int) data.next();
+                    int modeId =  data.next();
+                    int d =  data.next();
                     imodes.get(k).setSizeMin(d);
                     imodes.get(k).setSizeMax(d);
                     int q;
                     for (int j = 0; j < nbRenewable; j++) {
-                        q = (int) data.next();
+                        q =  data.next();
                         if (0 < q) {
                             renewables[j] = cp.sum(renewables[j], cp.pulse(imodes.get(k), q));
                         }
                     }
                     for (int j = 0; j < nbNonRenewable; j++) {
-                        q = (int) data.next();
+                        q =  data.next();
                         if (0 < q) {
                         	int[] qs = {0,q};
                         	IloIntVar inQ = cp.intVar(qs);

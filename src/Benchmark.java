@@ -26,8 +26,8 @@ public class Benchmark {
 		outputList.add(Integer.toString(nbEnt));
 		for (Enterprise e : eList) {
 			String index = Integer.toString(e.getIndex());
-			String location = Double.toString(e.getX()) + " " + Double.toString(e.getY());
-			String quality = Double.toString(e.getQuality());
+			String location = Integer.toString(e.getX()) + " " + Integer.toString(e.getY());
+			String quality = Integer.toString(e.getQuality());
 			String nbType = Integer.toString(e.getResourceCost().size());
 			outputList.add(index + " " + location + " " + quality + " " + nbType);
 			String data = "";

@@ -80,22 +80,22 @@ public class SchedRCPSPMM {
         
         try {
         	
-			nbEnterprise = (int) entData.next();
+			nbEnterprise =  entData.next();
 			for (int i = 0; i < nbEnterprise; i++) {
-				int idx = (int) entData.next();
-				double x = entData.next();
-				double y = entData.next();
-				double quality = entData.next();
+				int idx =  entData.next();
+				int x = entData.next();
+				int y = entData.next();
+				int quality = entData.next();
 				Enterprise e = new Enterprise(x, y);
 				e.setIndex(idx);
 				e.setQuality(quality);
 				
-				int nbType = (int) entData.next();
+				int nbType =  entData.next();
 				
 				for (int j = 0; j < nbType; j++) {
-					int type = (int) entData.next();
-					int amount = (int) entData.next();
-					int cost = (int) entData.next();
+					int type =  entData.next();
+					int amount =  entData.next();
+					int cost =  entData.next();
 					e.setResourceAmount(type, amount);
 					e.setResourceCost(type, cost);
 				}
@@ -111,9 +111,9 @@ public class SchedRCPSPMM {
         DataReader data = new DataReader(projectFileName);
         
         try {        	
-            nbTasks = (int) data.next();
-            nbRenewable = (int) data.next();
-            nbNonRenewable = (int) data.next();
+            nbTasks =  data.next();
+            nbRenewable =  data.next();
+            nbNonRenewable =  data.next();
             IloNumVar index = cp.numVar(0.5,0.5);
             /*
              *  renewable resource grouped according to their types. (nbRenewable)
@@ -144,7 +144,7 @@ public class SchedRCPSPMM {
 				oldAmount = data.next();
 			}
             
-            duedate = (int) data.next();
+            duedate =  data.next();
             
             for (Enterprise ent : enterprises) {
             	for (int tid : ent.getResourceAmount().keySet() ) {
@@ -176,30 +176,35 @@ public class SchedRCPSPMM {
             	capNonRenewables[j] = sumValue(capEntNon[j]);
             }
             
+            // variables
             IloIntervalVar[] tasks = new IloIntervalVar[nbTasks];
+            IloIntervalVar[] setups = new IloIntervalVar[nbTasks];
+//            IloNumExpr[] setups = new IloNumExpr[nbTasks];
             IntervalVarList[] modes = new IntervalVarList[nbTasks];
+            Location[] locals = new Location[nbTasks];
+            IloNumExpr[] Radius = new IloNumExpr[nbTasks];
+            IloNumExpr[] qualities = new IloNumExpr[nbTasks];
+            
+            // inits
             for (int i = 0; i < nbTasks; i++) {
                 tasks[i] = cp.intervalVar();
                 modes[i] = new IntervalVarList();
+                setups[i] = cp.intervalVar();
+//                setups[i] = cp.numExpr();
+                locals[i] = new Location();
+                Radius[i] = cp.numExpr();
+                qualities[i] = cp.numExpr();
             }
             
-            Location[] locals = new Location[nbTasks];
-            for (int i = 0; i < locals.length - 0; i++) {
-				locals[i] = new Location();
-			}
-            
-            IloNumExpr[] Radius = new IloNumExpr[nbTasks];
-            for (int i = 0; i < Radius.length - 0; i++) {
-				Radius[i] = cp.numExpr();
-				
-			}
-            
+            // precedence constraints
             List<IloIntExpr> ends = new ArrayList<IloIntExpr>();
+//            List<IloIntExpr> endss = new ArrayList<IloIntExpr>();
             for (int i = 0; i < nbTasks; i++) {
                 IloIntervalVar task = tasks[i];
-                int d = (int) data.next();
-                int nbModes = (int) data.next();
-                int nbSucc = (int) data.next();
+//                IloIntervalVar setup = setups[i];
+                int d =  data.next();
+                int nbModes =  data.next();
+                int nbSucc =  data.next();
                 for (int k = 0; k < nbModes; k++) {
                     IloIntervalVar alt = cp.intervalVar();
                     alt.setOptional();
@@ -208,18 +213,22 @@ public class SchedRCPSPMM {
                 
                 cp.add(cp.alternative(task, modes[i].toArray()));
                 ends.add(cp.endOf(task));
+//                endss.add(cp.endOf(setup));
                 for (int s = 0; s < nbSucc; s++) {
-                    int succ = (int) data.next();
-                    cp.add(cp.endBeforeStart(task, tasks[succ-1]));
+                    int succ =  data.next();
+                    cp.add(cp.endBeforeStart(task, setups[succ-1]));
+//                    cp.addGe(cp.diff(cp.startOf(tasks[succ-1]),ends.get(i)),setups[i]);
                 }
+                
+                cp.add(cp.endBeforeStart(setups[i], task));
+//                if (i == 0 || i == nbTasks-1) {
+//					setup.setSizeMax(0);
+//					setup.setSizeMin(0);
+//				}
+                
             }
             
-            IloNumExpr[] qualities = new IloNumExpr[nbTasks];	// quality for every service/task
-            for (int i = 0; i < nbTasks; i++) {
-				qualities[i] = cp.numExpr();
-			}
-//            IloIntExpr Amount = cp.intExpr();
-            
+            // resource constraints            
             for (int i = 0; i < nbTasks; i++) {
             	
             	IloNumExpr[] local = new IloNumExpr[2];
@@ -234,15 +243,20 @@ public class SchedRCPSPMM {
 					entRadius[eid] = cp.numExpr();
 				}
             	
+//            	IloIntervalVar setup = setups[i];
             	IntervalVarList imodes = modes[i];
                 IloNumExpr quality = cp.numExpr();
                 IloIntExpr amtTotal = cp.intExpr();
-                int taskId = (int) data.next();
+                
+                int taskId =  data.next();
                 for(int k=0; k < imodes.size(); k++) {
-                    int modeId = (int) data.next();
-                    int d = (int) data.next();	// duration
+                    int modeId =  data.next();
+                    int d =  data.next();	// duration
                     imodes.get(k).setSizeMin(d);
                     imodes.get(k).setSizeMax(d);
+                    
+
+                    
                     IloNumExpr tempQuality = cp.numExpr();
                     IloIntExpr tempAmtTotal = cp.intExpr();
                     
@@ -257,7 +271,7 @@ public class SchedRCPSPMM {
                     int q;	// resource required amount
                     for (int type = 0; type < nbRenewable; type++) {
                     	
-						q = (int) data.next();
+						q =  data.next();
 						if (q > 0) {
 							IloIntExpr sumRequire = cp.intExpr();
 							
@@ -283,7 +297,7 @@ public class SchedRCPSPMM {
 					}
                     
                     for (int type = 0; type < nbNonRenewable; type++) {
-						q = (int) data.next();
+						q =  data.next();
 						if (q > 0) {
 							IloIntExpr sumRequire = cp.intExpr();
 
@@ -305,43 +319,61 @@ public class SchedRCPSPMM {
 	                    	tempAmtTotal = cp.sum(tempAmtTotal,q);
 						}                    	
 					}
-                    local[0] = cp.sum(local[0],cp.prod(cp.presenceOf(imodes.get(k)), tempX));
-                    local[1] = cp.sum(local[1],cp.prod(cp.presenceOf(imodes.get(k)), tempY));
+                    local[0] = cp.sum(local[0],tempX);
+                    local[1] = cp.sum(local[1],tempY);
                     
-                    quality = cp.sum(quality, cp.prod(tempQuality, cp.presenceOf(imodes.get(k))));
+//                    quality = cp.sum(quality, cp.prod(tempQuality, cp.presenceOf(imodes.get(k))));
+                    quality = cp.sum(quality, tempQuality);
                     amtTotal = cp.sum(amtTotal,cp.prod(tempAmtTotal, cp.presenceOf(imodes.get(k))));
                     
                     for (int eid = 0; eid < enterprises.size(); eid++) {
-                    	entChosen[eid] = cp.sum(entChosen[eid], cp.prod(tempChosen[eid],cp.presenceOf(imodes.get(k))));
+                    	entChosen[eid] = cp.sum(entChosen[eid], tempChosen[eid]);
                     }
+                    
+                    
                 }
+                
+
                 if (i > 0 && i < nbTasks-1) {
                 	qualities[i] = cp.quot(quality, amtTotal);
                 	for (int j = 0; j < local.length; j++) {
 						local[j] = cp.quot(local[j], amtTotal);
 					}
-                	locals[i].setR(local);
-                	
-                	IloIntVar[] chosen = new IloIntVar[enterprises.size()];
-                    IloNumExpr chosenMax = cp.max(entChosen);
-                	for (int eid = 0; eid < chosen.length; eid++) {
-                		chosen[eid] = cp.intVar(0, 1);
-    					cp.add(cp.ifThenElse(cp.gt(entChosen[eid],0), cp.eq(chosen[eid], 1), cp.eq(chosen[eid], 0))); // add?
-    					IloNumExpr x = cp.prod(enterprises.get(eid).getX(),chosen[eid]);
-                    	IloNumExpr y = cp.prod(enterprises.get(eid).getY(),chosen[eid]);
-                    	
-                    	IloNumExpr cx = cp.prod(local[0],chosen[eid]);
-                    	IloNumExpr cy = cp.prod(local[1],chosen[eid]);
-                    	
-                    	entRadius[eid] = cp.ceil(cp.power(cp.sum(cp.square(cp.abs(cp.diff(x, cx))),cp.square(cp.abs(cp.diff(y, cy)))),index));
-            
-    				}
-                    
-                    Radius[i] = cp.max(entRadius);
-                	
+                }
+                else{
+//					qualities[i] = cp.numVar(0, 0);
+//					local[0] = cp.numVar(0, 0);
+//					local[1] = cp.numVar(0, 0);
+                	Radius[i] = cp.sum(Radius[i],0);
 				}
                 
-
+            	locals[i].setR(local);
+                
+                IloIntVar[] chosen = new IloIntVar[enterprises.size()];
+                IloNumExpr chosenMax = cp.max(entChosen);
+            	for (int eid = 0; eid < chosen.length; eid++) {
+            		chosen[eid] = cp.intVar(0, 1);
+					cp.add(cp.ifThenElse(cp.gt(entChosen[eid],0), cp.eq(chosen[eid], 1), cp.eq(chosen[eid], 0))); // add?
+					
+					IloNumExpr x = cp.prod(enterprises.get(eid).getX(),chosen[eid]);
+                	IloNumExpr y = cp.prod(enterprises.get(eid).getY(),chosen[eid]);
+                	
+                	IloNumExpr cx = cp.prod(local[0],chosen[eid]);
+                	IloNumExpr cy = cp.prod(local[1],chosen[eid]);
+                	
+//                	entRadius[eid] = cp.numVar(0, Double.MAX_VALUE)；
+//                	entRadius[eid] = x;
+//                	entRadius[eid] = cp.sum(cp.abs(cp.diff(x, cx)),cp.abs(cp.diff(y, cy)));
+                	entRadius[eid] = cp.power(cp.sum(cp.square(cp.abs(cp.diff(x, cx))),cp.square(cp.abs(cp.diff(y, cy)))),index);
+//                	entRadius[eid] = cp.ceil(cp.quot(entRadius[eid],5));
+				}
+                Radius[i] = cp.max(entRadius);
+                IloNumVar zzz = cp.numVar(0, Double.MAX_VALUE);
+                cp.addGe(zzz, Radius[i]);
+//                cp.addGe(setups[i],Radius[i]);
+//                setups[i] = cp.ceil(cp.sum(Radius[i],setups[i]));
+                cp.addGe(cp.diff(cp.endOf(setups[i]), cp.startOf(setups[i])),zzz);
+//                cp.add(cp.ge(cp.endOf(setups[i]),cp.sum(cp.startOf(setups[i]),Radius[i])));
                 
             }
             
@@ -367,21 +399,21 @@ public class SchedRCPSPMM {
             // radius obj
             IloNumExpr objRad = cp.max(Radius);
             
-            IloMultiCriterionExpr objs = cp.staticLex(objMakespan,objQuality,objRad);
+            IloMultiCriterionExpr objs = cp.staticLex(objMakespan,objQuality);
             IloObjective objective = cp.minimize(objs);
             cp.add(objective);
 
-            cp.setParameter(IloCP.IntParam.FailLimit, failLimit);
-            cp.setParameter(IloCP.DoubleParam.TimeLimit, 200);
+//            cp.setParameter(IloCP.IntParam.FailLimit, failLimit);
+//            cp.setParameter(IloCP.DoubleParam.TimeLimit, 200);
             
             System.out.println("Instance \t: " + projectFileName);
             if (cp.solve()) {
                 System.out.println("Makespan \t: " + cp.getObjValues()[0]);
                 System.out.println("Total Quality \t: " + cp.getObjValues()[1]);
-                System.out.println("Radius \t: " + cp.getValue(objRad));
-//                for (int i = 0; i < nbTasks; i++) {
-//					System.out.println(cp.getValue(Radius[i]));
-//				}
+//                System.out.println("Radius \t: " + cp.getValue(objRad));
+                for (int i = 0; i < nbTasks; i++) {
+					System.out.println(cp.getValue(cp.endOf(setups[i])));
+				}
             }
             else {
                 System.out.println("No solution found.");

@@ -10,10 +10,10 @@ public class DataReader {
             st = new StreamTokenizer(r);
         }
 
-        public double next() throws IOException {
+        public int next() throws IOException {
 
             st.nextToken();
-            return st.nval;
+            return (int) st.nval;
         }
     
 }

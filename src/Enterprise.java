@@ -6,7 +6,7 @@ public class Enterprise {
 	/**
 	 * Location r_j = ( x , y ) 
 	 */
-	private double x, y;
+	private int x, y;
 	
 	private int index;
 	/**
@@ -21,9 +21,9 @@ public class Enterprise {
 	private Map<Integer, Integer> resourceCost = new HashMap<Integer, Integer>();
 //	private Map<Integer, Double> resourceQualiyt = new HashMap<Integer, Double>();
 	
-	private double quality = 0;
+	private int quality = 0;
 	
-	public Enterprise(double x, double y) {
+	public Enterprise(int x, int y) {
 		// generate location
 		this.x = x;
 		this.y = y;
@@ -35,11 +35,11 @@ public class Enterprise {
 //		this.cost = 10*Math.random() + 10;
 	}
 	
-	public double getX(){
+	public int getX(){
 		return this.x;
 	}
 	
-	public double getY(){
+	public int getY(){
 		return this.y;
 	}
 	
@@ -77,11 +77,11 @@ public class Enterprise {
 //		this.resourceQualiyt.put(type,quality);		
 //	}
 	
-	public double getQuality() {
+	public int getQuality() {
 		return quality;
 	}
 
-	public void setQuality(double quality) {
+	public void setQuality(int quality) {
 		this.quality = quality;
 	}
 	
