@@ -131,7 +131,7 @@ public class SchedRCPSPMM {
             Map<Integer,Integer>[] capEntRen = new HashMap[nbRenewable];
             Map<Integer,Integer>[] capEntNon = new HashMap[nbNonRenewable];
             
-            double oldAmount;
+            int oldAmount;
             
             for (int type = 0; type < nbRenewable; type++) {
 				capEntRen[type] = new HashMap<Integer, Integer>();
@@ -183,7 +183,7 @@ public class SchedRCPSPMM {
             IntervalVarList[] modes = new IntervalVarList[nbTasks];
             Location[] locals = new Location[nbTasks];
             IloNumExpr[] Radius = new IloNumExpr[nbTasks];
-            IloNumExpr[] qualities = new IloNumExpr[nbTasks];
+            IloIntExpr[] qualities = new IloIntExpr[nbTasks];
             
             // inits
             for (int i = 0; i < nbTasks; i++) {
@@ -193,7 +193,7 @@ public class SchedRCPSPMM {
 //                setups[i] = cp.numExpr();
                 locals[i] = new Location();
                 Radius[i] = cp.numExpr();
-                qualities[i] = cp.numExpr();
+                qualities[i] = cp.intExpr();
             }
             
             // precedence constraints
@@ -231,21 +231,23 @@ public class SchedRCPSPMM {
             // resource constraints            
             for (int i = 0; i < nbTasks; i++) {
             	
-            	IloNumExpr[] local = new IloNumExpr[2];
+            	IloIntExpr[] local = new IloIntExpr[2];
             	for (int j = 0; j < local.length; j++) {
-            		local[j] = cp.numExpr();
+            		local[j] = cp.intExpr();
 				}
             	
             	IloIntExpr[] entChosen = new IloIntExpr[enterprises.size()];
             	IloNumExpr[] entRadius = new IloNumExpr[enterprises.size()];
+            	IloIntVar[]  entRadiuses = new IloIntVar[enterprises.size()];
             	for (int eid = 0; eid < enterprises.size(); eid++) {
 					entChosen[eid] = cp.intExpr();
-					entRadius[eid] = cp.numExpr();
+					entRadius[eid] = cp.intExpr();
+					entRadiuses[eid] = cp.intVar(0,Integer.MAX_VALUE);
 				}
             	
 //            	IloIntervalVar setup = setups[i];
             	IntervalVarList imodes = modes[i];
-                IloNumExpr quality = cp.numExpr();
+                IloIntExpr quality = cp.intExpr();
                 IloIntExpr amtTotal = cp.intExpr();
                 
                 int taskId =  data.next();
@@ -257,11 +259,11 @@ public class SchedRCPSPMM {
                     
 
                     
-                    IloNumExpr tempQuality = cp.numExpr();
+                    IloIntExpr tempQuality = cp.intExpr();
                     IloIntExpr tempAmtTotal = cp.intExpr();
                     
-                    IloNumExpr tempX = cp.numExpr();
-                	IloNumExpr tempY = cp.numExpr();
+                    IloIntExpr tempX = cp.intExpr();
+                	IloIntExpr tempY = cp.intExpr();
                 	
                 	IloIntExpr[] tempChosen = new IloIntExpr[enterprises.size()];
                 	for (int j = 0; j < enterprises.size(); j++) {
@@ -279,7 +281,7 @@ public class SchedRCPSPMM {
 								int vmax = enterprises.get(eid).getResourceAmount().get(type);
 								entRenewables[type].put(eid, cp.sum(entRenewables[type].get(eid), cp.pulse(imodes.get(k), 0, vmax)));
 								IloIntExpr amtChosen = cp.heightAtStart(imodes.get(k), entRenewables[type].get(eid));
-								double entQuality = enterprises.get(eid).getQuality();
+								int entQuality = enterprises.get(eid).getQuality();
 								tempQuality = cp.sum(tempQuality,cp.prod(entQuality, amtChosen));
 								sumRequire = cp.sum(sumRequire, amtChosen);
 								
@@ -304,7 +306,7 @@ public class SchedRCPSPMM {
 	                    	for (int eid : entNonRenewables[type].keySet()) {
 	                    		int vmax = capEntNon[type].get(eid);
 	                    		IloIntVar amount = cp.intVar(0, vmax);
-	                    		double entQuality = enterprises.get(eid).getQuality();
+	                    		int entQuality = enterprises.get(eid).getQuality();
 								entNonRenewables[type].put(eid, cp.sum(entNonRenewables[type].get(eid),amount));
 								tempQuality = cp.sum(tempQuality, cp.prod(entQuality, amount));
 								sumRequire = cp.sum(sumRequire, amount);
@@ -335,40 +337,42 @@ public class SchedRCPSPMM {
                 
 
                 if (i > 0 && i < nbTasks-1) {
-                	qualities[i] = cp.quot(quality, amtTotal);
+                	qualities[i] = cp.div(quality, amtTotal);
                 	for (int j = 0; j < local.length; j++) {
-						local[j] = cp.quot(local[j], amtTotal);
+						local[j] = cp.div(local[j], amtTotal);
 					}
                 }
-                else{
+//                else{
 //					qualities[i] = cp.numVar(0, 0);
 //					local[0] = cp.numVar(0, 0);
 //					local[1] = cp.numVar(0, 0);
-                	Radius[i] = cp.sum(Radius[i],0);
-				}
+//                	Radius[i] = cp.sum(Radius[i],0);
+//				}
                 
             	locals[i].setR(local);
                 
                 IloIntVar[] chosen = new IloIntVar[enterprises.size()];
-                IloNumExpr chosenMax = cp.max(entChosen);
+                IloIntExpr chosenMax = cp.max(entChosen);
             	for (int eid = 0; eid < chosen.length; eid++) {
             		chosen[eid] = cp.intVar(0, 1);
 					cp.add(cp.ifThenElse(cp.gt(entChosen[eid],0), cp.eq(chosen[eid], 1), cp.eq(chosen[eid], 0))); // add?
 					
-					IloNumExpr x = cp.prod(enterprises.get(eid).getX(),chosen[eid]);
-                	IloNumExpr y = cp.prod(enterprises.get(eid).getY(),chosen[eid]);
+					IloIntExpr x = cp.prod(enterprises.get(eid).getX(),chosen[eid]);
+                	IloIntExpr y = cp.prod(enterprises.get(eid).getY(),chosen[eid]);
                 	
-                	IloNumExpr cx = cp.prod(local[0],chosen[eid]);
-                	IloNumExpr cy = cp.prod(local[1],chosen[eid]);
+                	IloIntExpr cx = cp.prod(local[0],chosen[eid]);
+                	IloIntExpr cy = cp.prod(local[1],chosen[eid]);
                 	
 //                	entRadius[eid] = cp.numVar(0, Double.MAX_VALUE)；
 //                	entRadius[eid] = x;
 //                	entRadius[eid] = cp.sum(cp.abs(cp.diff(x, cx)),cp.abs(cp.diff(y, cy)));
                 	entRadius[eid] = cp.power(cp.sum(cp.square(cp.abs(cp.diff(x, cx))),cp.square(cp.abs(cp.diff(y, cy)))),index);
+//                	cp.addLe(entRadiuses[eid] , cp.ceil(cp.power(cp.sum(cp.square(cp.abs(cp.diff(x, cx))),cp.square(cp.abs(cp.diff(y, cy)))),index)));
+//                	cp.addGe(entRadiuses[eid] , cp.power(cp.sum(cp.square(cp.abs(cp.diff(x, cx))),cp.square(cp.abs(cp.diff(y, cy)))),index));
 //                	entRadius[eid] = cp.ceil(cp.quot(entRadius[eid],5));
 				}
                 Radius[i] = cp.max(entRadius);
-                IloNumVar zzz = cp.numVar(0, Double.MAX_VALUE);
+                IloIntVar zzz = cp.intVar(0, Integer.MAX_VALUE);
                 cp.addGe(zzz, Radius[i]);
 //                cp.addGe(setups[i],Radius[i]);
 //                setups[i] = cp.ceil(cp.sum(Radius[i],setups[i]));
@@ -390,14 +394,14 @@ public class SchedRCPSPMM {
             }
             
             // quality obj
-            IloNumExpr objQuality = cp.floor(cp.sum(qualities));
-            objQuality = cp.prod(-1.0, objQuality);
+            IloIntExpr objQuality = cp.sum(qualities);
+            objQuality = cp.prod(-1, objQuality);
             		
             // makespan obj
             IloIntExpr objMakespan = cp.max(arrayFromList(ends));
             
             // radius obj
-            IloNumExpr objRad = cp.max(Radius);
+//            IloIntExpr objRad = cp.max(Radius);
             
             IloMultiCriterionExpr objs = cp.staticLex(objMakespan,objQuality);
             IloObjective objective = cp.minimize(objs);
