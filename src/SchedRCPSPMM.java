@@ -40,8 +40,8 @@ import java.io.*;
 import java.util.*;
 
 public class SchedRCPSPMM {
-    static IloCP cp = new IloCP();
-    static int duedate;
+//    static IloCP cp = new IloCP();
+//    static int duedate;
     private static class IntervalVarList extends ArrayList<IloIntervalVar> {
         public IloIntervalVar[] toArray() {
             return (IloIntervalVar[]) this.toArray(new IloIntervalVar[this.size()]);
@@ -55,7 +55,7 @@ public class SchedRCPSPMM {
     public static void solve(String[] args) throws IOException {
         int failLimit = 30000;
         int nbTasks, nbRenewable, nbNonRenewable;
-//        int duedate;
+        int duedate;
         
         int nbEnterprise;
         List<Enterprise> enterprises = new ArrayList<Enterprise>();
@@ -70,7 +70,7 @@ public class SchedRCPSPMM {
             failLimit = Integer.parseInt(args[2]);
         
         
-//        IloCP cp = new IloCP();
+        IloCP cp = new IloCP();
         
         
         
@@ -227,9 +227,9 @@ public class SchedRCPSPMM {
             	
             	IloIntExpr[] entChosen = new IloIntExpr[enterprises.size()];
             	IloNumExpr[] entRadius = new IloNumExpr[enterprises.size()];
-            	for (int j = 0; j < enterprises.size(); j++) {
-					entChosen[j] = cp.intExpr();
-					entRadius[j] = cp.numExpr();
+            	for (int eid = 0; eid < enterprises.size(); eid++) {
+					entChosen[eid] = cp.intExpr();
+					entRadius[eid] = cp.numExpr();
 				}
             	
             	IntervalVarList imodes = modes[i];
@@ -332,15 +332,20 @@ public class SchedRCPSPMM {
 					}
                 	locals[i].setR(local);
                 	
-                	
-                	IloNumExpr[] chosen = new IloNumExpr[enterprises.size()];
+                	IloIntVar[] chosen = new IloIntVar[enterprises.size()];
                     IloNumExpr chosenMax = cp.max(entChosen);
                 	for (int eid = 0; eid < chosen.length; eid++) {
-                    	chosen[eid] = cp.ceil( cp.quot(entChosen[eid],chosenMax));
-//    					cp.add(cp.ifThen(cp.gt(entChosen[eid],0), cp.addEq(chosen[eid], 1))); // add?
+                		chosen[eid] = cp.intVar(0, 1);
+//                    	chosen[eid] = cp. entChosen[eid];
+    					cp.ifThen(cp.gt(entChosen[eid],0), cp.eq(chosen[eid], 1)); // add?
     					IloNumExpr x = cp.prod(enterprises.get(eid).getX(),chosen[eid]);
                     	IloNumExpr y = cp.prod(enterprises.get(eid).getY(),chosen[eid]);
-                    	entRadius[eid] = norm2(x, local[0], y, local[1]);
+//                    	entRadius[eid] = norm2(x, local[0], y, local[1]);
+                    	
+                    	IloNumExpr index = cp.numExpr();
+                    	index = cp.sum(index,0.5);
+                    	entRadius[eid] = cp.power(cp.sum(cp.square(cp.abs(cp.diff(x, local[0]))),cp.square(cp.abs(cp.diff(y, local[1])))),index);
+            
     				}
                     
                     Radius[i] = cp.max(entRadius);
@@ -373,18 +378,21 @@ public class SchedRCPSPMM {
             // radius obj
             IloNumExpr objRad = cp.max(Radius);
             
-            IloMultiCriterionExpr objs = cp.staticLex(objMakespan,objQuality,objRad);
-            IloObjective objective = cp.minimize(objRad);
+            IloMultiCriterionExpr objs = cp.staticLex(objRad);
+            IloObjective objective = cp.minimize(objs);
             cp.add(objective);
 
             cp.setParameter(IloCP.IntParam.FailLimit, failLimit);
-            cp.setParameter(IloCP.DoubleParam.TimeLimit, 2000);
+            cp.setParameter(IloCP.DoubleParam.TimeLimit, 200);
             
             System.out.println("Instance \t: " + projectFileName);
             if (cp.solve()) {
-                System.out.println("Makespan \t: " + cp.getObjValue());
+                System.out.println("Makespan \t: " + cp.getObjValues()[0]);
 //                System.out.println("Total Quality \t: " + cp.getObjValues()[1]);
-//                System.out.println("Radius \t: " + cp.getObjValues()[2]);
+                System.out.println("Radius \t: " + cp.getValue(objRad));
+                for (int i = 0; i < nbTasks; i++) {
+					System.out.println(cp.getValue(Radius[i]));
+				}
             }
             else {
                 System.out.println("No solution found.");
@@ -403,19 +411,19 @@ public class SchedRCPSPMM {
     	
     }
     
-    public static IloNumExpr norm2(IloNumExpr x1, IloNumExpr x2, IloNumExpr y1, IloNumExpr y2) throws IloException{
-    	IloNumExpr middle = cp.sum(cp.square(cp.diff(x1,x2)),cp.square(cp.diff(y1,y2)));
-    	
-    	return Sqrt(middle);
-    }
-    
-    public static IloNumExpr Sqrt(IloNumExpr x) throws IloException{
-    	IloNumExpr result = cp.numExpr(); 
-    	result = cp.sum(Math.sqrt(2)*duedate,result);
-    	for (int i = 0; i < 12; i++) {
-			result = cp.prod(0.5, cp.sum(result,cp.quot(x, result)));
-		}
-    	return result;
-    }
+//    public static IloNumExpr norm2(IloNumExpr x1, IloNumExpr x2, IloNumExpr y1, IloNumExpr y2) throws IloException{
+//    	IloNumExpr middle = cp.sum(cp.square(cp.diff(x1,x2)),cp.square(cp.diff(y1,y2)));
+//    	
+//    	return Sqrt(middle);
+//    }
+//    
+//    public static IloNumExpr Sqrt(IloNumExpr x) throws IloException{
+//    	IloNumExpr result = cp.numExpr(); 
+//    	result = cp.sum(Math.sqrt(2)*duedate*2,result);
+////    	for (int i = 0; i < 11; i++) {
+////			result = cp.prod(0.5, cp.sum(result,cp.quot(x, result)));
+////		}
+//    	return result;
+//    }
 
 }
