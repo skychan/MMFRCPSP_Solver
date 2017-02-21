@@ -142,7 +142,12 @@ public class Verify {
                     for (int j = 0; j < nbNonRenewable; j++) {
                         q = (int) data.next();
                         if (0 < q) {
-                            nonRenewables[j] = cp.sum(nonRenewables[j], cp.prod(q, cp.presenceOf(imodes.get(k))));
+                        	int[] qs = {0,q};
+                        	IloIntVar inQ = cp.intVar(qs);
+                        	
+                        	cp.ifThenElse(cp.presenceOf(imodes.get(k)), cp.eq(inQ,q),cp.eq(inQ,0));
+                            nonRenewables[j] = cp.sum(nonRenewables[j], inQ);
+                            
                         }
                     }
                 }
