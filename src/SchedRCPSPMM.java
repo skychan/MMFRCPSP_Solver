@@ -178,8 +178,8 @@ public class SchedRCPSPMM {
             
             // variables
             IloIntervalVar[] tasks = new IloIntervalVar[nbTasks];
-            IloIntervalVar[] setups = new IloIntervalVar[nbTasks];
-//            IloNumExpr[] setups = new IloNumExpr[nbTasks];
+//            IloIntervalVar[] setups = new IloIntervalVar[nbTasks];
+            IloIntVar[] setups = new IloIntVar[nbTasks];
             IntervalVarList[] modes = new IntervalVarList[nbTasks];
             Location[] locals = new Location[nbTasks];
             IloNumExpr[] Radius = new IloNumExpr[nbTasks];
@@ -189,7 +189,7 @@ public class SchedRCPSPMM {
             for (int i = 0; i < nbTasks; i++) {
                 tasks[i] = cp.intervalVar();
                 modes[i] = new IntervalVarList();
-                setups[i] = cp.intervalVar();
+                setups[i] = cp.intVar(0,Integer.MAX_VALUE);
 //                setups[i] = cp.numExpr();
                 locals[i] = new Location();
                 Radius[i] = cp.numExpr();
@@ -216,14 +216,14 @@ public class SchedRCPSPMM {
 //                endss.add(cp.endOf(setup));
                 for (int s = 0; s < nbSucc; s++) {
                     int succ =  data.next();
-                    cp.add(cp.endBeforeStart(task, setups[succ-1]));
-//                    cp.addGe(cp.diff(cp.startOf(tasks[succ-1]),ends.get(i)),setups[i]);
+//                    cp.add(cp.endBeforeStart(task, setups[succ-1]));
+                    cp.addGe(cp.diff(cp.startOf(tasks[succ-1]),ends.get(i)),setups[i]);
                 }
                 
-                cp.add(cp.endBeforeStart(setups[i], task));
+//                cp.add(cp.endBeforeStart(setups[i], task));
 //                if (i == 0 || i == nbTasks-1) {
-//					setup.setSizeMax(0);
-//					setup.setSizeMin(0);
+//					setups[i].setSizeMax(Integer.MAX_VALUE);
+//					setups[i].setSizeMin(0);
 //				}
                 
             }
@@ -364,19 +364,19 @@ public class SchedRCPSPMM {
                 	IloIntExpr cy = cp.prod(local[1],chosen[eid]);
                 	
 //                	entRadius[eid] = cp.numVar(0, Double.MAX_VALUE)；
-//                	entRadius[eid] = x;
+//                	entRadius[eid] = cx;
 //                	entRadius[eid] = cp.sum(cp.abs(cp.diff(x, cx)),cp.abs(cp.diff(y, cy)));
-                	entRadius[eid] = cp.power(cp.sum(cp.square(cp.abs(cp.diff(x, cx))),cp.square(cp.abs(cp.diff(y, cy)))),index);
+                	entRadius[eid] = cp.ceil(cp.power(cp.sum(cp.square(cp.abs(cp.diff(x, cx))),cp.square(cp.abs(cp.diff(y, cy)))),index));
 //                	cp.addLe(entRadiuses[eid] , cp.ceil(cp.power(cp.sum(cp.square(cp.abs(cp.diff(x, cx))),cp.square(cp.abs(cp.diff(y, cy)))),index)));
 //                	cp.addGe(entRadiuses[eid] , cp.power(cp.sum(cp.square(cp.abs(cp.diff(x, cx))),cp.square(cp.abs(cp.diff(y, cy)))),index));
 //                	entRadius[eid] = cp.ceil(cp.quot(entRadius[eid],5));
 				}
-                Radius[i] = cp.max(entRadius);
-                IloIntVar zzz = cp.intVar(0, Integer.MAX_VALUE);
-                cp.addGe(zzz, Radius[i]);
+                Radius[i] = cp.sum(entRadius);
+//                IloIntVar zzz = cp.intVar(0, Integer.MAX_VALUE);
+//                cp.addGe(setups[i], Radius[i]);
 //                cp.addGe(setups[i],Radius[i]);
 //                setups[i] = cp.ceil(cp.sum(Radius[i],setups[i]));
-                cp.addGe(cp.diff(cp.endOf(setups[i]), cp.startOf(setups[i])),zzz);
+//                cp.addGe(cp.diff(cp.endOf(setups[i]), cp.startOf(setups[i])),zzz);
 //                cp.add(cp.ge(cp.endOf(setups[i]),cp.sum(cp.startOf(setups[i]),Radius[i])));
                 
             }
@@ -401,23 +401,23 @@ public class SchedRCPSPMM {
             IloIntExpr objMakespan = cp.max(arrayFromList(ends));
             
             // radius obj
-//            IloIntExpr objRad = cp.max(Radius);
+            IloNumExpr objRad = cp.max(Radius);
             
-            IloMultiCriterionExpr objs = cp.staticLex(objMakespan,objQuality);
+            IloMultiCriterionExpr objs = cp.staticLex(objMakespan,objQuality,objRad);
             IloObjective objective = cp.minimize(objs);
             cp.add(objective);
 
-//            cp.setParameter(IloCP.IntParam.FailLimit, failLimit);
+            cp.setParameter(IloCP.IntParam.FailLimit, failLimit);
 //            cp.setParameter(IloCP.DoubleParam.TimeLimit, 200);
             
             System.out.println("Instance \t: " + projectFileName);
             if (cp.solve()) {
                 System.out.println("Makespan \t: " + cp.getObjValues()[0]);
                 System.out.println("Total Quality \t: " + cp.getObjValues()[1]);
-//                System.out.println("Radius \t: " + cp.getValue(objRad));
-                for (int i = 0; i < nbTasks; i++) {
-					System.out.println(cp.getValue(cp.endOf(setups[i])));
-				}
+                System.out.println("Radius \t: " + cp.getValue(objRad));
+//                for (int i = 0; i < nbTasks; i++) {
+//					System.out.println(cp.getValue(setups[i]));
+//				}
             }
             else {
                 System.out.println("No solution found.");
