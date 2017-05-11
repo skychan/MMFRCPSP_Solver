@@ -111,6 +111,11 @@ public class RL {
 			}
 			
 			
+			// constraints include: 
+			// precedence
+			// resource amount 
+			
+			
 		} catch (IOException e) {
 			// TODO: handle exception
 			System.out.println("Error: " + e);

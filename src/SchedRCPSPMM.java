@@ -371,7 +371,7 @@ public class SchedRCPSPMM {
 //                	cp.addGe(entRadiuses[eid] , cp.power(cp.sum(cp.square(cp.abs(cp.diff(x, cx))),cp.square(cp.abs(cp.diff(y, cy)))),index));
 //                	entRadius[eid] = cp.ceil(cp.quot(entRadius[eid],5));
 				}
-                Radius[i] = cp.sum(entRadius);
+                Radius[i] = cp.max(entRadius);
 //                IloIntVar zzz = cp.intVar(0, Integer.MAX_VALUE);
 //                cp.addGe(setups[i], Radius[i]);
 //                cp.addGe(setups[i],Radius[i]);
@@ -401,7 +401,7 @@ public class SchedRCPSPMM {
             IloIntExpr objMakespan = cp.max(arrayFromList(ends));
             
             // radius obj
-            IloNumExpr objRad = cp.max(Radius);
+            IloNumExpr objRad = cp.sum(Radius);
             
             IloMultiCriterionExpr objs = cp.staticLex(objMakespan,objQuality,objRad);
             IloObjective objective = cp.minimize(objs);
